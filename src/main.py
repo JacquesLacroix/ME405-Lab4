@@ -26,6 +26,7 @@ def task1(shares):
     """!
 
     """
+    (kp_share) = shares
     pinC1 = pyb.Pin(pyb.Pin.board.PC1, pyb.Pin.OUT_PP)
     pinA0 = pyb.Pin(pyb.Pin.board.PA0, pyb.Pin.OUT_PP) 
     pinA1 = pyb.Pin(pyb.Pin.board.PA1, pyb.Pin.OUT_PP)
@@ -40,6 +41,7 @@ def task1(shares):
     encoder = encoder_reader.Encoder(pinC6, pinC7, tim8)
 
     ctrl = controller.Controller(encoder, motor, 8000, 1/16)
+    
     ser = pyb.USB_VCP()
     while True:
         line = ser.readline()
@@ -57,10 +59,10 @@ def task1(shares):
                     try:
                         kp = float(kp)
                     except:
-                        print("End")
+                        print("End 1")
                         yield 0
                         break
-                        
+                    kp_share.put(kp)
                     ctrl.set_kp(kp)
                     encoder.zero()
                         
@@ -78,8 +80,9 @@ def task1(shares):
                         last = current
                         yield 0
                         
-                    ctrl.print_list(startticks)
-                    print("End")
+                    for i in ctrl.print_list(1, startticks):
+                        yield
+                    print("End 1")
                     yield 0
                     break
                 yield 0
@@ -87,7 +90,56 @@ def task1(shares):
         else:
             yield 0
 
+def task2(shares):
+    """!
 
+    """
+    (kp_share) = shares
+    pinA10 = pyb.Pin(pyb.Pin.board.PA10, pyb.Pin.OUT_PP)
+    pinB4 = pyb.Pin(pyb.Pin.board.PB4, pyb.Pin.OUT_PP) 
+    pinB5 = pyb.Pin(pyb.Pin.board.PB5, pyb.Pin.OUT_PP)
+    
+    pinB6 = pyb.Pin(pyb.Pin.board.PB6, pyb.Pin.OUT_PP) 
+    pinB7 = pyb.Pin(pyb.Pin.board.PB7, pyb.Pin.OUT_PP)
+    
+    tim3 = pyb.Timer(3, freq=20000)   #Motor Controller Timer 
+    tim4 = pyb.Timer(4, prescaler=1, period=65535)
+    
+    motor = motor_driver.MotorDriver(pinA10, pinB4, pinB5, tim3)
+    encoder = encoder_reader.Encoder(pinB6, pinB7, tim4)
+
+    ctrl = controller.Controller(encoder, motor, 16000, 1/16)
+
+    while True:
+        if kp_share.get():
+            ctrl.set_kp(kp_share.get())
+            
+            kp_share.put(0)
+            encoder.zero()
+                
+            startticks = utime.ticks_ms()
+            
+            last = 0
+            
+            while True:
+                current = ctrl.run()
+                if abs(current) < 15 and last - current < .5:
+                    for i in range(10):
+                        ctrl.run()
+                        yield 0
+                    break
+                last = current
+                yield 0
+                
+            for i in ctrl.print_list(2, startticks):
+                pass
+            print("End 2")
+            yield 0
+            continue
+        else:
+            yield 0
+        
+            
 # This code creates a share, a queue, and two tasks, then starts the tasks. The
 # tasks run until somebody presses ENTER, at which time the scheduler stops and
 # printouts show diagnostic information about the tasks, share, and queue.
@@ -96,18 +148,22 @@ if __name__ == "__main__":
 #           "Press Ctrl-C to stop and show diagnostics.")
 
     # Create a share and a queue to test function and diagnostic printouts
-    share0 = task_share.Share('h', thread_protect=False, name="Share 0")
-    q0 = task_share.Queue('L', 16, thread_protect=False, overwrite=False,
-                          name="Queue 0")
+    share0 = task_share.Share('f', thread_protect=False,
+                          name="Share 0")
+    share0.put(0)
 
     # Create the tasks. If trace is enabled for any task, memory will be
     # allocated for state transition tracing, and the application will run out
     # of memory after a while and quit. Therefore, use tracing only for 
     # debugging and set trace to False when it's not needed
     task1 = cotask.Task(task1, name="Task_1", priority=1, period=10,
-                        profile=True, trace=False, shares=(share0, q0))
+                        profile=True, trace=False, shares=(share0))
+    task2 = cotask.Task(task2, name="Task_2", priority=2, period=10,
+                        profile=True, trace=False, shares=(share0))
+    
     cotask.task_list.append(task1)
-
+    cotask.task_list.append(task2)
+    
     # Run the memory garbage collector to ensure memory is as defragmented as
     # possible before the real-time scheduler is started
     gc.collect()

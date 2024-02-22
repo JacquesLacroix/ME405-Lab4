@@ -54,14 +54,15 @@ class Controller:
         """
         self.kp = kp
         
-    def print_list(self, start):
+    def print_list(self, task, start):
         """!
         Prints and clears all time and position pairs logged
         @param start Time in milliseconds at which the response test began
         @returns None
         """
         for i in range(len(self.times)):
-            print(f"{(self.times[i] - start):d}, {self.positions[i]:d}")
+            print(f"{task}, {(self.times[i] - start):d}, {self.positions[i]:d}")
+            yield
         self.times = []
         self.positions = []
     

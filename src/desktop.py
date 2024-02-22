@@ -22,10 +22,11 @@ def plot_response(plot_axes, plot_canvas, xlabel, ylabel):
     @param ylabel label for y axis of plot
     @returns None
     """
-    times = []
-    result = []
+    times = [[], []]
+    result = [[], []]
 
     with Serial('COM5', 9600, timeout=1) as ser:
+        thisIsABadVariableName = 2
         kp = input("ENTER KP VALUE: ")
         try:
             kp = float(kp)
@@ -39,24 +40,32 @@ def plot_response(plot_axes, plot_canvas, xlabel, ylabel):
         ser.flush()
 
         while True:
+            if thisIsABadVariableName == 0:
+                break
             line = ser.readline().decode().strip()
             
             if line == "":
                 continue
             
             print(line)
-            if line == "End":
-                break
+            if line == "End 1":
+                thisIsABadVariableName -= 1
+                continue
+            if line == "End 2":
+                thisIsABadVariableName -= 1
+                continue
+            
             else:
                 pass
-                times.append(float(line.split(", ")[0]))
-                result.append(float(line.split(", ")[1]))
+                times[int(line.split(", ")[0]) - 1].append(float(line.split(", ")[1]))
+                result[int(line.split(", ")[0]) - 1].append(float(line.split(", ")[2]))
     
-    plot_axes.scatter(times, result)
+    plot_axes.scatter(times[0], result[0])
+    plot_axes.scatter(times[1], result[1])
     plot_axes.set_xlabel(xlabel)
     plot_axes.set_ylabel(ylabel)
-    plot_axes.set_xticks([0, 50, 100, 150, 200, 250, 300, 350, 400, 450, 500, 550])
-    plot_axes.set_yticks([0, 1000, 2000, 3000, 4000, 5000, 6000, 7000, 8000, 9000])
+    plot_axes.set_xticks(list(range(0,1000,100)))
+    plot_axes.set_yticks(list(range(0,17000,1000)))
     plot_axes.grid(True)
     plot_canvas.draw()
 
