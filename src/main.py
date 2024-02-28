@@ -1,13 +1,7 @@
 """!
-@file basic_tasks.py
-    This file contains a demonstration program that runs some tasks, an
-    inter-task shared variable, and a queue. The tasks don't really @b do
-    anything; the example just shows how these elements are created and run.
-
-@author JR Ridgely
-@date   2021-Dec-15 JRR Created from the remains of previous example
-@copyright (c) 2015-2021 by JR Ridgely and released under the GNU
-    Public License, Version 2. 
+@file main.py
+    This file demonstrates cooperative multitasking and use of cotask and share in checking the inputs and outputs
+    of the Nucleo board with a DC motor response.
 """
 
 import gc
@@ -20,11 +14,11 @@ import controller
 import utime
 
 
-
-# Task 1: call run() on controller
 def task1(shares):
     """!
-
+    This task sets up the pins for motor 1 and calls run() in our controller file- This task then starts the
+    step response and prints the values once it's done.
+    @returns None
     """
     (kp_share) = shares
     pinC1 = pyb.Pin(pyb.Pin.board.PC1, pyb.Pin.OUT_PP)
@@ -92,7 +86,8 @@ def task1(shares):
 
 def task2(shares):
     """!
-
+    This task performs the same function as task1 but for motor 2.
+    @returns None
     """
     (kp_share) = shares
     pinA10 = pyb.Pin(pyb.Pin.board.PA10, pyb.Pin.OUT_PP)
@@ -140,9 +135,6 @@ def task2(shares):
             yield 0
         
             
-# This code creates a share, a queue, and two tasks, then starts the tasks. The
-# tasks run until somebody presses ENTER, at which time the scheduler stops and
-# printouts show diagnostic information about the tasks, share, and queue.
 if __name__ == "__main__":
 #     print("Testing ME405 stuff in cotask.py and task_share.py\r\n"
 #           "Press Ctrl-C to stop and show diagnostics.")
